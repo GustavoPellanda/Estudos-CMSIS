@@ -1,34 +1,43 @@
 #include "dma.h"
 
-void dma_start_transfer(DMA_TypeDef *dma, DMA_Channel_TypeDef *channel, uint8_t channel_number, volatile void *src, volatile void *dst, uint16_t length) {
+void dma_start_transfer(DMA_TypeDef *dma, DMA_Stream_TypeDef *stream, uint8_t stream_number, volatile void *src, volatile void *dst, uint16_t length) {
 
-                                                      // CCR é o registrador de controle do DMA
-    while(channel->CCR & DMA_CCR_EN);                 // Aguarda liberação do bit Enable do DMA
-    channel->CCR &= ~DMA_CCR_EN;                      // Garante que o EN seja colocado em 0
+  while(stream->CR & DMA_SxCR_EN);   // Aguarda liberação do bit Enable do DMA
+  stream->CR &= ~DMA_SxCR_EN;        // Garante que o EN seja colocado em 0
 
-    __DSB();                                          // Espera as instruções anteriores terminarem antes de prosseguir    
+  __DSB();                           // Espera as instruções anteriores terminarem antes de prosseguir
 
-    channel->CMAR = (uint32_t)dst;                    // CMAR - endereço de memória do DMA
-    channel->CPAR = (uint32_t)src;                    // CPAR - endereço do periférico do DMA
-    channel->CNDTR = length;                          // CNDTR - número de dados do DMA
-    
-    uint32_t flag_shift = (channel_number - 1) * 4;   // Pula a quantidade de bits correspondente ao canal escolhido
+  stream->M0AR = (uint32_t)src;      // M0AR - endereço de memória do DMA
+  stream->PAR = (uint32_t)dst;       // PAR - endereço do periférico do DMA
+  stream->NDTR = length;             // NDTR - número de dados do DMA
 
-    dma->IFCR =                                       // IFCR - registrador de flags do DMA
-          (DMA_IFCR_CGIF1   << flag_shift)            // Limpa a flag de interrupção
-        | (DMA_IFCR_CTCIF1  << flag_shift)            // Limpa a flag de transferência completa
-        | (DMA_IFCR_CTEIF1  << flag_shift);           // Limpa a flag de erro de transferência
+  uint32_t flag_shift = (stream_number % 4) * 6;  // Pula a quantidade de bits correspondente ao stream escolhido
 
-    __DMB();                                          // Mantém a ordem das instruções anteriores
+  if(stream_number < 4) {
+    dma->LIFCR =
+        (DMA_LIFCR_CFEIF0   << flag_shift)    // Limpa a flag de erro de FIFO
+      | (DMA_LIFCR_CDMEIF0  << flag_shift)    // Limpa a flag de erro de modo direto
+      | (DMA_LIFCR_CTEIF0   << flag_shift)    // Limpa a flag de erro de transferência
+      | (DMA_LIFCR_CHTIF0   << flag_shift)    // Limpa a flag de meia transferência
+      | (DMA_LIFCR_CTCIF0   << flag_shift);   // Limpa a flag de transferência completa
+  } else {
+      dma->HIFCR =
+        (DMA_HIFCR_CFEIF4   << flag_shift)
+      | (DMA_HIFCR_CDMEIF4  << flag_shift)
+      | (DMA_HIFCR_CTEIF4   << flag_shift)
+      | (DMA_HIFCR_CHTIF4   << flag_shift)
+      | (DMA_HIFCR_CTCIF4   << flag_shift);
+  }
 
-    channel->CCR |=
-          DMA_CCR_MINC                                // Habilita incremento de memória
-        | DMA_CCR_DIR                                 // Define a direção da transferência (memória para periférico)
-        | DMA_CCR_TCIE                                // Habilita interrupção de transferência completa
-        | DMA_CCR_PL_1;                               // Define a prioridade do canal como alta
+  __DMB();    // Mantém a ordem das instruções anteriores
 
-    channel->CCR |= DMA_CCR_EN;                       // Seta o EN do DMA para 1
+  stream->CR |=
+      DMA_SxCR_MINC     // Habilita incremento de memória
+    | DMA_SxCR_DIR_0    // Define a direção da transferência (memória para periférico)
+    | DMA_SxCR_TCIE     // Habilita interrupção de transferência completa
+    | DMA_SxCR_PL_1;    // Define a prioridade do stream como alta
 
+  stream->CR |= DMA_SxCR_EN;    // Seta o EN do DMA para 1
 }
 
 // TODO: Deixar a direção de transferência do DMA configurável (memória para periférico ou periférico para memória)

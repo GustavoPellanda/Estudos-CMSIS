@@ -1,4 +1,4 @@
-#include "stm32f103xb.h"
+#include "stm32f446xx.h"
 #include "dma.h"
 #include "system.h"
 
@@ -10,8 +10,8 @@ int main(void){
 
     dma_start_transfer(
         DMA1,
-        DMA1_Channel4,
-        4,
+        DMA1_Stream6,
+        6,
         mensagem,
         &USART1->DR,
         sizeof(mensagem)
