@@ -5,13 +5,18 @@
 
 /*  Driver para transferências DMA */
 
+extern volatile uint8_t dma_transfer_complete; 
+// Flag que indica se a transferência do DMA foi concluída, para ser utilizada na rotina de interrupção
+
 void dma_start_transfer(
     DMA_TypeDef *dma,               // Controlador DMA (DMA1 ou DMA2)
     DMA_Stream_TypeDef *stream,     // Endereço do stream DMA
     uint8_t stream_number,          // Número do stream DMA (0 a 7)
+    uint8_t channel,                // Canal do stream DMA (0 a 7)
     volatile void *src,             // Endereço de origem dos dados
     volatile void *dst,             // Endereço de destino dos dados
-    uint16_t length                 // Quantidade de transferências
+    uint16_t length,                // Quantidade de transferências
+    IRQn_Type irq                   // Número da interrupção do stream DMA
 );
 
 #endif
