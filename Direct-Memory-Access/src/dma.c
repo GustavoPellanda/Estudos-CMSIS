@@ -48,21 +48,3 @@ void dma_start_transfer(DMA_TypeDef *dma, DMA_Stream_TypeDef *stream, uint8_t st
   dma_transfer_complete = 0;
   stream->CR |= DMA_SxCR_EN; // Seta o enable stream do DMA
 }
-
-// Rotina de interrupção do stream utilizado para a transmissão de dados do USART1
-void DMA2_Stream7_IRQHandler(void){
-    if(DMA2->HISR & DMA_HISR_TCIF7){      // DMA_HISR_TCIF7 é a flag de transferência completa do stream 7 do DMA2
-        DMA2->HIFCR |= DMA_HIFCR_CTCIF7;  // Limpa a flag de transferência completa
-        dma_transfer_complete = 1;        // Seta a flag de transferência completa para ser utilizada na rotina principal
-    }
-}
-
-// Rotina de interrupção do stream utilizado para aquisição ADC
-void DMA2_Stream0_IRQHandler(void){
-    if(DMA2->LISR & DMA_LISR_TCIF0){
-        DMA2->LIFCR |= DMA_LIFCR_CTCIF0;
-        dma_transfer_complete = 1;
-    }
-}
-
-// TODO: deixar as rotinas de interrupção genéricas

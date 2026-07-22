@@ -5,8 +5,8 @@
 
 /*  Driver para transferências DMA */
 
-extern volatile uint8_t dma_transfer_complete; 
-// Flag que indica se a transferência do DMA foi concluída, para ser utilizada na rotina de interrupção
+// Variável global para sinalizar conclusão da transferência:
+extern volatile uint8_t dma_transfer_complete;
 
 void dma_start_transfer(
     DMA_TypeDef *dma,               // Controlador DMA (DMA1 ou DMA2)

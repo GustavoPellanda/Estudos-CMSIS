@@ -68,6 +68,40 @@ int process_and_format_adc(uint16_t *adc_data, int adc_len,uint8_t *output, int 
     return len;
 }
 
+// Handler de interrupção para DMA2_Stream0 (ADC -> Memória)
+void DMA2_Stream0_IRQHandler(void) {
+    // Limpa a flag de interrupção de transferência completa
+    if(DMA2->LISR & DMA_LISR_TCIF0) {
+        DMA2->LIFCR = DMA_LIFCR_CTCIF0;
+    }
+    
+    // Alterna o buffer de escrita do ADC
+    adc_write_idx = (adc_write_idx == 0) ? 1 : 0;
+    
+    // Reinicia a transferência DMA para o próximo buffer
+    dma_start_transfer(
+        DMA2,
+        DMA2_Stream0,
+        0, // Stream ADC -> memória
+        0, // Canal do ADC1
+        &ADC1->DR,
+        adc_buffer[adc_write_idx],
+        ADC_BUFFER_SIZE,
+        DMA2_Stream0_IRQn
+    );
+}
+
+// Handler de interrupção para DMA2_Stream7 (Memória -> USART)
+void DMA2_Stream7_IRQHandler(void) {
+    // Limpa a flag de interrupção de transferência completa
+    if(DMA2->HISR & DMA_HISR_TCIF7) {
+        DMA2->HIFCR = DMA_HIFCR_CTCIF7;
+    }
+    
+    // Sinaliza que a transferência USART foi concluída
+    dma_transfer_complete = 1;
+}
+
 int main(void){
     
     system_init();
